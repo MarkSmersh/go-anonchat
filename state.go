@@ -5,6 +5,10 @@ type State[K string | int, V any] struct {
 }
 
 func (s *State[K, V]) Set(k K, v V) {
+	if s.states == nil {
+		s.states = map[K]V{}
+	}
+
 	s.states[k] = v
 }
 
