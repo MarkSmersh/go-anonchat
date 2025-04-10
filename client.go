@@ -16,7 +16,8 @@ import (
 type Telegram struct {
 	token    string
 	updateId int
-	eventer  Eventer[general.Update]
+	state    State[int, int]
+	eventer  Updater
 }
 
 func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
@@ -63,7 +64,9 @@ func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
 	resultBytes, _ := json.Marshal(result.Result)
 
 	if !result.Ok {
-		log.Println("Telegram Bad Response")
+		log.Println(
+			fmt.Sprintf("Telegram error. Code: %d. Description: %s", *result.ErrorCode, *result.Description),
+		)
 		return resultBytes, errors.New("Telegram Bad Response")
 	}
 
@@ -95,6 +98,13 @@ func (t *Telegram) GetUpdates(params methods.GetUpdates) ([]general.Update, erro
 	return data, nil
 }
 
+func (t *Telegram) EditMessageText(params methods.EditMessageText) (general.Message, error) {
+	result, _ := t.Request("editMessageText", params)
+	data := general.Message{}
+	json.Unmarshal(result, &data)
+	return data, nil
+}
+
 func (t *Telegram) Polling() {
 	for {
 		req := methods.GetUpdates{
@@ -106,7 +116,17 @@ func (t *Telegram) Polling() {
 		for i := range updates {
 			u := updates[i]
 
-			t.eventer.Invoke(general.UpdateMessage, u)
+			if u.Message != nil {
+				e := u.Message
+
+				if e.Text != nil && (*e.Text)[0] == '/' {
+					t.eventer.commands.Invoke(*u.Message)
+					break
+				}
+
+				t.eventer.messages.Invoke(*u.Message)
+				break
+			}
 		}
 
 		if len(updates) <= 0 {
