@@ -12,9 +12,9 @@ type Update struct {
 	// DeletedBusinessMessages *BusinessMessagesDeleted    `json:"deleted_business_messages,omitempty"`
 	// MessageReaction         *MessageReactionUpdated     `json:"message_reaction,omitempty"`
 	// MessageReactionCount    *MessageReactionCountUpdated`json:"message_reaction_count,omitempty"`
-	// InlineQuery             *InlineQuery                `json:"inline_query,omitempty"`
+	InlineQuery *InlineQuery `json:"inline_query,omitempty"`
 	// ChosenInlineResult      *ChosenInlineResult         `json:"chosen_inline_result,omitempty"`
-	// // CallbackQuery           *CallbackQuery              `json:"callback_query,omitempty"`
+	CallbackQuery *CallbackQuery `json:"callback_query,omitempty"`
 	// ShippingQuery           *ShippingQuery              `json:"shipping_query,omitempty"`
 	// PreCheckoutQuery        *PreCheckoutQuery           `json:"pre_checkout_query,omitempty"`
 	// PurchasedPaidMedia      *PaidMediaPurchased         `json:"purchased_paid_media,omitempty"`
@@ -26,8 +26,3 @@ type Update struct {
 	// ChatBoost               *ChatBoostUpdated           `json:"chat_boost,omitempty"`
 	// RemovedChatBoost        *ChatBoostRemoved           `json:"removed_chat_boost,omitempty"`
 }
-
-const (
-	UpdateMessage     = 1
-	UpdateInlineQuery = 2
-)

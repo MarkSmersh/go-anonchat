@@ -1,17 +1,17 @@
-package main
+package core
 
 type State[K string | int, V any] struct {
-	states map[K]V
+	States map[K]V
 }
 
 func (s *State[K, V]) Set(k K, v V) {
-	if s.states == nil {
-		s.states = map[K]V{}
+	if s.States == nil {
+		s.States = map[K]V{}
 	}
 
-	s.states[k] = v
+	s.States[k] = v
 }
 
 func (s *State[K, V]) Get(k K) V {
-	return s.states[k]
+	return s.States[k]
 }

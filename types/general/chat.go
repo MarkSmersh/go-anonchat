@@ -1,7 +1,7 @@
 package general
 
 type Chat struct {
-	ID        int64   `json:"id"`                   // 64-bit safe chat ID
+	ID        int     `json:"id"`                   // 64-bit safe chat ID
 	Type      string  `json:"type"`                 // "private", "group", "supergroup", "channel"
 	Title     *string `json:"title,omitempty"`      // Title for groups, channels
 	Username  *string `json:"username,omitempty"`   // Username if available

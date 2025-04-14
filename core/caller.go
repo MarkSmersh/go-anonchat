@@ -1,15 +1,15 @@
-package main
+package core
 
 type Caller[T any] struct {
-	calls []func(T)
+	Calls []func(T)
 }
 
 func (c *Caller[T]) Add(callback func(T)) {
-	c.calls = append(c.calls, callback)
+	c.Calls = append(c.Calls, callback)
 }
 
 func (c *Caller[T]) Invoke(data T) {
-	for i := range c.calls {
-		c.calls[i](data)
+	for i := range c.Calls {
+		c.Calls[i](data)
 	}
 }

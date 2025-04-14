@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/MarkSmersh/go-anonchat/types/general"
@@ -14,14 +15,14 @@ import (
 )
 
 type Telegram struct {
-	token    string
-	updateId int
-	state    State[int, int]
-	eventer  Updater
+	Token    string
+	UpdateId int
+	State    State[int, int]
+	Eventer  Updater
 }
 
 func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
-	paramsString := ""
+	paramsValues := url.Values{}
 
 	if params != nil {
 		var paramsMap map[string]interface{}
@@ -35,11 +36,11 @@ func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
 		d.Decode(&paramsMap)
 
 		for k, v := range paramsMap {
-			paramsString += fmt.Sprintf("%s=%v&", k, v)
+			paramsValues.Add(k, fmt.Sprintf("%v", v))
 		}
 	}
 
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/%s?%s", t.token, method, paramsString)
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/%s?%s", t.Token, method, paramsValues.Encode())
 
 	// println(url)
 
@@ -63,6 +64,8 @@ func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
 
 	resultBytes, _ := json.Marshal(result.Result)
 
+	// println(string(body[:]))
+
 	if !result.Ok {
 		log.Println(
 			fmt.Sprintf("Telegram error. Code: %d. Description: %s", *result.ErrorCode, *result.Description),
@@ -73,19 +76,37 @@ func (t *Telegram) Request(method string, params interface{}) ([]byte, error) {
 	return resultBytes, nil
 }
 
-func (t *Telegram) Init() {
+func (t *Telegram) Init(callback func(e general.User)) {
+	if callback != nil {
+		me, _ := t.GetMe()
+		callback(me)
+	}
 	t.Polling()
 }
 
-func (t *Telegram) GetMe() (methods.GetMeRes, error) {
+func (t *Telegram) GetMe() (general.User, error) {
 	result, _ := t.Request("getMe", nil)
-	data := methods.GetMeRes{}
+	data := general.User{}
 	json.Unmarshal(result, &data)
 	return data, nil
 }
 
-func (t *Telegram) SendMessage(params methods.SendMessageReq) (general.Message, error) {
+func (t *Telegram) SendMessage(params methods.SendMessage) (general.Message, error) {
 	result, _ := t.Request("sendMessage", params)
+	data := general.Message{}
+	json.Unmarshal(result, &data)
+	return data, nil
+}
+
+func (t *Telegram) ForwardMessage(params methods.ForwardMessage) (general.Message, error) {
+	result, _ := t.Request("forwardMessage", params)
+	data := general.Message{}
+	json.Unmarshal(result, &data)
+	return data, nil
+}
+
+func (t *Telegram) CopyMessage(params methods.CopyMessage) (general.Message, error) {
+	result, _ := t.Request("copyMessage", params)
 	data := general.Message{}
 	json.Unmarshal(result, &data)
 	return data, nil
@@ -105,10 +126,22 @@ func (t *Telegram) EditMessageText(params methods.EditMessageText) (general.Mess
 	return data, nil
 }
 
+func (t *Telegram) EditMessageReplyMarkup(params methods.EditMessageReplyMarkup) (general.Message, error) {
+	result, _ := t.Request("editMessageReplyMarkup", params)
+	data := general.Message{}
+	json.Unmarshal(result, &data)
+	return data, nil
+}
+
+func (t *Telegram) AnswerCallbackQuery(params methods.AnswerCallbackQuery) error {
+	t.Request("answerCallbackQuery", params)
+	return nil
+}
+
 func (t *Telegram) Polling() {
 	for {
 		req := methods.GetUpdates{
-			Offset: &t.updateId,
+			Offset: t.UpdateId,
 		}
 
 		updates, _ := t.GetUpdates(req)
@@ -120,12 +153,20 @@ func (t *Telegram) Polling() {
 				e := u.Message
 
 				if e.Text != nil && (*e.Text)[0] == '/' {
-					t.eventer.commands.Invoke(*u.Message)
+					t.Eventer.Commands.Invoke(*u.Message)
 					break
 				}
 
-				t.eventer.messages.Invoke(*u.Message)
+				t.Eventer.Messages.Invoke(*u.Message)
 				break
+			}
+
+			if u.InlineQuery != nil {
+				t.Eventer.InlineQuery.Invoke(*u.InlineQuery)
+			}
+
+			if u.CallbackQuery != nil {
+				t.Eventer.CallbackQuery.Invoke(*u.CallbackQuery)
 			}
 		}
 
@@ -133,6 +174,6 @@ func (t *Telegram) Polling() {
 			continue
 		}
 
-		t.updateId = updates[len(updates)-1].UpdateID + 1
+		t.UpdateId = updates[len(updates)-1].UpdateID + 1
 	}
 }

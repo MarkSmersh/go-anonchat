@@ -9,5 +9,5 @@ type EditMessageText struct {
 	ParseMode            string      `json:"parse_mode,omitempty"` // e.g. "MarkdownV2", "HTML"
 	// Entities             []MessageEntity       `json:"entities,omitempty"`
 	// LinkPreviewOptions   *LinkPreviewOptions   `json:"link_preview_options,omitempty"`
-	// ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	ReplyMarkup string `json:"reply_markup,omitempty"`
 }

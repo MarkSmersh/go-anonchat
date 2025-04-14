@@ -2,102 +2,65 @@ package main
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/MarkSmersh/go-anonchat/consts"
+	"github.com/MarkSmersh/go-anonchat/core"
+	"github.com/MarkSmersh/go-anonchat/functions/commands"
+	"github.com/MarkSmersh/go-anonchat/functions/inline"
 	"github.com/MarkSmersh/go-anonchat/types/general"
 	"github.com/MarkSmersh/go-anonchat/types/methods"
 )
 
-var t = Telegram{token: "", updateId: 0}
-var c = Chat{}
-
-const (
-	StateDefault   = 0
-	StateSearch    = 1
-	StateConnected = 2
-)
+var t = core.Telegram{Token: "", UpdateId: 0}
+var c = core.Chat{}
 
 func main() {
-	t.eventer.messages.Add(messageHandler)
-	t.eventer.commands.Add(commandHandler)
-	t.Init()
+	t.Eventer.Messages.Add(messageHandler)
+	t.Eventer.Commands.Add(commandHandler)
+	t.Eventer.CallbackQuery.Add(callbackHandler)
+	t.Init(onInit)
+}
+
+func onInit(me general.User) {
+	c.Users = map[int]*core.User{}
+
+	fmt.Printf("Bot %s is started", me.FirstName)
 }
 
 func messageHandler(e general.Message) {
-	if e.Text != nil && t.state.Get(int(e.Chat.ID)) == StateConnected {
-		t.SendMessage(methods.SendMessageReq{
-			ChatID: int64(c.Get(int(e.Chat.ID))),
-			Text:   *e.Text,
+	if t.State.Get(e.Chat.ID) == consts.StateConnected {
+		t.CopyMessage(methods.CopyMessage{
+			ChatID:     c.Get(e.Chat.ID),
+			FromChatID: e.Chat.ID,
+			MessageID:  e.MessageID,
 		})
 	}
 }
 
 func commandHandler(e general.Message) {
-	if *e.Text == "/start" {
-		t.state.Set(int(e.Chat.ID), StateSearch)
+	_, ok := c.Users[e.Chat.ID]
 
-		t.SendMessage(methods.SendMessageReq{
-			Text:   "Searching...",
-			ChatID: e.Chat.ID,
-		})
-
-		c.AddToSearch(int(e.Chat.ID))
-
-		go func() {
-			for {
-				if t.state.Get(int(e.Chat.ID)) != StateSearch {
-					return
-				}
-
-				userId := c.GetFirstCompanion(int(e.Chat.ID))
-
-				if userId != 0 {
-					c.Connect(int(e.Chat.ID), userId)
-
-					t.state.Set(int(e.Chat.ID), StateConnected)
-					t.state.Set(userId, StateConnected)
-
-					t.SendMessage(methods.SendMessageReq{
-						ChatID: e.Chat.ID,
-						Text:   fmt.Sprintf("New companion is found (id%d)", userId),
-					})
-
-					t.SendMessage(methods.SendMessageReq{
-						ChatID: int64(userId),
-						Text:   fmt.Sprintf("New companion is found (id%d)", e.Chat.ID),
-					})
-
-					return
-				} else {
-					time.Sleep(1000 * time.Millisecond)
-				}
-			}
-		}()
+	if !ok {
+		c.Users[e.Chat.ID] = &core.User{Id: e.Chat.ID, Interests: []int{}, Age: 0, Companion: 0, Sex: 0}
 	}
 
-	if *e.Text == "/stop" {
-		t.SendMessage(methods.SendMessageReq{
-			Text:   "Goodbye!",
-			ChatID: e.Chat.ID,
-		})
+	commands.Start(&t, &c, &e)
 
-		c.RemoveFromSearch(int(e.Chat.ID))
+	commands.ChatSearch(&t, &c, &e)
+
+	commands.Stop(&t, &c, &e)
+
+	commands.Ping(&t, &c, &e)
+
+	commands.Interests(&t, &c, &e)
+}
+
+func callbackHandler(e general.CallbackQuery) {
+	_, ok := c.Users[e.From.ID]
+
+	if !ok {
+		c.Users[e.From.ID] = &core.User{Id: e.From.ID, Interests: []int{}, Age: 0, Companion: 0, Sex: 0}
 	}
 
-	if *e.Text == "/ping" {
-		before := time.Now().UnixMilli()
-
-		m, _ := t.SendMessage(methods.SendMessageReq{
-			Text:   "Ping...",
-			ChatID: e.Chat.ID,
-		})
-
-		after := time.Now().UnixMilli()
-
-		t.EditMessageText(methods.EditMessageText{
-			Text:      fmt.Sprintf("Pong: %d ms", after-before),
-			MessageID: m.MessageID,
-			ChatID:    m.Chat.ID,
-		})
-	}
+	inline.Interests(&t, &c, &e)
 }

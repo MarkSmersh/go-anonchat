@@ -1,12 +1,12 @@
 package general
 
 type Message struct {
-	MessageID       int  `json:"message_id"`
-	MessageThreadID *int `json:"message_thread_id,omitempty"`
-	// From                        *User                      `json:"from,omitempty"`
-	SenderChat       *Chat `json:"sender_chat,omitempty"`
-	SenderBoostCount *int  `json:"sender_boost_count,omitempty"`
-	// SenderBusinessBot          *User                      `json:"sender_business_bot,omitempty"`
+	MessageID            int     `json:"message_id"`
+	MessageThreadID      *int    `json:"message_thread_id,omitempty"`
+	From                 *User   `json:"from,omitempty"`
+	SenderChat           *Chat   `json:"sender_chat,omitempty"`
+	SenderBoostCount     *int    `json:"sender_boost_count,omitempty"`
+	SenderBusinessBot    *User   `json:"sender_business_bot,omitempty"`
 	Date                 int     `json:"date"`
 	BusinessConnectionID *string `json:"business_connection_id,omitempty"`
 	Chat                 Chat    `json:"chat"`
@@ -17,7 +17,7 @@ type Message struct {
 	// ExternalReply               *ExternalReplyInfo         `json:"external_reply,omitempty"`
 	// Quote                       *TextQuote                 `json:"quote,omitempty"`
 	// ReplyToStory                *Story                     `json:"reply_to_story,omitempty"`
-	// ViaBot                      *User                      `json:"via_bot,omitempty"`
+	ViaBot              *User   `json:"via_bot,omitempty"`
 	EditDate            *int    `json:"edit_date,omitempty"`
 	HasProtectedContent *bool   `json:"has_protected_content,omitempty"`
 	IsFromOffline       *bool   `json:"is_from_offline,omitempty"`
@@ -47,9 +47,9 @@ type Message struct {
 	// Poll                        *Poll                      `json:"poll,omitempty"`
 	// Venue                       *Venue                     `json:"venue,omitempty"`
 	// Location                    *Location                  `json:"location,omitempty"`
-	// NewChatMembers              []User                     `json:"new_chat_members,omitempty"`
-	// LeftChatMember              *User                      `json:"left_chat_member,omitempty"`
-	NewChatTitle *string `json:"new_chat_title,omitempty"`
+	NewChatMembers []User  `json:"new_chat_members,omitempty"`
+	LeftChatMember *User   `json:"left_chat_member,omitempty"`
+	NewChatTitle   *string `json:"new_chat_title,omitempty"`
 	// NewChatPhoto                []PhotoSize                `json:"new_chat_photo,omitempty"`
 	DeleteChatPhoto       *bool `json:"delete_chat_photo,omitempty"`
 	GroupChatCreated      *bool `json:"group_chat_created,omitempty"`
