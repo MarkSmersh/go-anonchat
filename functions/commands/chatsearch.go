@@ -2,10 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MarkSmersh/go-anonchat/consts"
 	"github.com/MarkSmersh/go-anonchat/core"
+	"github.com/MarkSmersh/go-anonchat/helpers"
 	"github.com/MarkSmersh/go-anonchat/types/general"
 	"github.com/MarkSmersh/go-anonchat/types/methods"
 )
@@ -30,8 +32,20 @@ func ChatSearch(t *core.Telegram, c *core.Chat, e *general.Message) {
 
 		t.State.Set(e.Chat.ID, consts.StateSearch)
 
+		text := "Searching...\n\nYou can stop a searching process with /stop"
+
+		if len(c.Users[e.Chat.ID].Interests) > 0 {
+			interests := []string{}
+
+			for _, i := range c.Users[e.Chat.ID].Interests {
+				interests = append(interests, helpers.InterestToStr(i))
+			}
+
+			text = fmt.Sprintf("Your interests: %s\n\n", strings.Join(interests, ", ")) + text
+		}
+
 		t.SendMessage(methods.SendMessage{
-			Text:   "Searching...\n\nUse /stop to stop searching process",
+			Text:   text,
 			ChatID: e.Chat.ID,
 		})
 
@@ -43,7 +57,13 @@ func ChatSearch(t *core.Telegram, c *core.Chat, e *general.Message) {
 					return
 				}
 
-				userId, _ := c.GetFirstCompanion(e.Chat.ID)
+				userId, equalInterests := c.GetFirstCompanion(e.Chat.ID)
+
+				interests := []string{}
+
+				for _, i := range equalInterests {
+					interests = append(interests, helpers.InterestToStr(i))
+				}
 
 				if userId != 0 {
 					c.Connect(e.Chat.ID, userId)
@@ -51,14 +71,20 @@ func ChatSearch(t *core.Telegram, c *core.Chat, e *general.Message) {
 					t.State.Set(e.Chat.ID, consts.StateConnected)
 					t.State.Set(userId, consts.StateConnected)
 
+					text := "New companion is found (id%d)"
+
+					if len(equalInterests) > 0 {
+						text = fmt.Sprintf("Equal interests: %s\n\n", strings.Join(interests, ", ")) + text
+					}
+
 					t.SendMessage(methods.SendMessage{
 						ChatID: e.Chat.ID,
-						Text:   fmt.Sprintf("New companion is found (id%d)", userId),
+						Text:   fmt.Sprintf(text, userId),
 					})
 
 					t.SendMessage(methods.SendMessage{
 						ChatID: userId,
-						Text:   fmt.Sprintf("New companion is found (id%d)", e.Chat.ID),
+						Text:   fmt.Sprintf(text, e.Chat.ID),
 					})
 
 					return

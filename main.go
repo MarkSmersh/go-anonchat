@@ -11,7 +11,7 @@ import (
 	"github.com/MarkSmersh/go-anonchat/types/methods"
 )
 
-var t = core.Telegram{Token: "", UpdateId: 0}
+var t = core.Telegram{Token: "5942711238:AAG3IPSz1GWPdVn9C0zAAJ3r08t72i2b14I", UpdateId: 0}
 var c = core.Chat{}
 
 func main() {
