@@ -3,8 +3,9 @@ package core
 import "slices"
 
 type Chat struct {
-	Users  map[int]*User
-	Search []*User
+	Users    map[int]*User
+	Search   []*User
+	Messages map[int]int
 }
 
 func (c *Chat) AddToSearch(id int) {
@@ -68,6 +69,12 @@ func (c *Chat) Disconnect(a int) int {
 
 	c.Users[a].RemoveCompanion()
 
+	for k := range c.Messages {
+		if k == a || k == b {
+			delete(c.Messages, k)
+		}
+	}
+
 	if b != 0 {
 		c.Users[b].RemoveCompanion()
 		return b
@@ -78,4 +85,32 @@ func (c *Chat) Disconnect(a int) int {
 
 func (c *Chat) Get(id int) int {
 	return c.Users[id].Companion
+}
+
+func (c *Chat) AddMessage(a int, b int) {
+	if c.Messages == nil {
+		c.Messages = map[int]int{}
+	}
+
+	c.Messages[a] = b
+}
+
+func (c *Chat) GetMessageA(a int) int {
+	v, ok := c.Messages[a]
+
+	if ok {
+		return v
+	} else {
+		return 0
+	}
+}
+
+func (c *Chat) GetMessageB(b int) int {
+	for k, v := range c.Messages {
+		if v == b {
+			return k
+		}
+	}
+
+	return 0
 }

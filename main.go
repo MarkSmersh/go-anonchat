@@ -7,11 +7,14 @@ import (
 	"github.com/MarkSmersh/go-anonchat/core"
 	"github.com/MarkSmersh/go-anonchat/functions/commands"
 	"github.com/MarkSmersh/go-anonchat/functions/inline"
+	"github.com/MarkSmersh/go-anonchat/helpers"
 	"github.com/MarkSmersh/go-anonchat/types/general"
 	"github.com/MarkSmersh/go-anonchat/types/methods"
 )
 
-var t = core.Telegram{Token: "5942711238:AAG3IPSz1GWPdVn9C0zAAJ3r08t72i2b14I", UpdateId: 0}
+var env, _ = helpers.GetEnv()
+
+var t = core.Telegram{Token: env["BOT_TOKEN"], UpdateId: 0}
 var c = core.Chat{}
 
 func main() {
@@ -29,11 +32,34 @@ func onInit(me general.User) {
 
 func messageHandler(e general.Message) {
 	if t.State.Get(e.Chat.ID) == consts.StateConnected {
-		t.CopyMessage(methods.CopyMessage{
+		req := methods.CopyMessage{
 			ChatID:     c.Get(e.Chat.ID),
 			FromChatID: e.Chat.ID,
 			MessageID:  e.MessageID,
-		})
+		}
+
+		if e.ReplyToMessage != nil {
+
+			tr := true
+			messageId := c.GetMessageA(e.ReplyToMessage.MessageID)
+			from := c.Get(e.Chat.ID)
+
+			if e.ReplyToMessage.From.ID == e.From.ID {
+				messageId = c.GetMessageB(e.ReplyToMessage.MessageID)
+			}
+
+			rp := general.ReplyParameters{
+				MessageID:                messageId,
+				ChatID:                   from,
+				AllowSendingWithoutReply: &tr,
+			}
+
+			req.ReplyParameters = rp.ToJSON()
+		}
+
+		mes, _ := t.CopyMessage(req)
+
+		c.AddMessage(mes.MessageID, e.MessageID)
 	}
 }
 
